@@ -460,6 +460,23 @@ const LoadsView = ({ onCreateNew, onSelectFreight }: {
         setFreights(result.freights);
         setLoading(false);
       }
+      "use client"
+import { useEffect } from "react";
+
+export default function Home() {
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  }, []);
+
+  return (
+    <div>
+      Broker Freight
+    </div>
+  );
+}
     };
     loadFreights();
     return () => { mounted = false; };
