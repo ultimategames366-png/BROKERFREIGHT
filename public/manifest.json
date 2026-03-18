@@ -1,34 +1,21 @@
 {
-  "name": "Freight Broker",
-  "short_name": "FreightApp",
-  "description": "A powerful digital notebook for freight brokers to manage shipments, track payments, and maintain records.",
+  "name": "Broker Freight",
+  "short_name": "BrokerFreight",
+  "description": "Freight broker management and report card system",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0B0B",
-  "theme_color": "#7B61FF",
-  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["business", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Add New Load",
-      "short_name": "Add Load",
-      "description": "Create a new freight load",
-      "url": "/?action=create",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "type": "image/png"
     }
   ]
 }
