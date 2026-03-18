@@ -1,0 +1,220 @@
+// Freight Broker Management Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Truck Information
+model Truck {
+  id             String       @id @default(cuid())
+  truckNumber    String       @unique
+  lastFourDigits String       // Last 4 digits for quick search
+  notes          String?      // General notes about the truck
+  totalTrips     Int          @default(0)
+  hasProblems    Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  // Relations
+  freights       Freight[]
+  truckNotes     TruckNote[]
+  contacts       Contact[]    @relation("TruckContacts")
+  
+  @@index([lastFourDigits])
+  @@index([truckNumber])
+}
+
+// Contact Information (Drivers, Owners, Clients)
+model Contact {
+  id           String   @id @default(cuid())
+  name         String
+  phoneNumber  String   @unique
+  altPhone     String?
+  isImported   Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  freights     FreightContact[]
+  trucks       Truck[]         @relation("TruckContacts")
+  
+  @@index([phoneNumber])
+  @@index([name])
+}
+
+// Junction table for Contact roles in freights
+model FreightContact {
+  id        String      @id @default(cuid())
+  freightId String
+  contactId String
+  role      String      // DRIVER, OWNER, PRODUCT_OWNER, SECOND_DRIVER, PAYMENT_PERSON
+  
+  // Relations
+  freight   Freight     @relation(fields: [freightId], references: [id], onDelete: Cascade)
+  contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@unique([freightId, contactId, role])
+  @@index([freightId])
+  @@index([contactId])
+}
+
+// Main Freight/Load record
+model Freight {
+  id             String        @id @default(cuid())
+  truckId        String
+  
+  // Location details
+  pickupLocation String
+  dropLocation   String
+  distanceKm     Float?
+  
+  // Weight details
+  weight         Float
+  weightType     String        // TON, CHAKKA
+  
+  // Freight amounts
+  freightType    String        // FIXED, PER_TON
+  brokerFreight  Float
+  driverFreight  Float
+  
+  // Status
+  status         String        @default("ACTIVE") // ACTIVE, COMPLETED, PROBLEM, CANCELLED
+  
+  // Dates
+  pickupDate     DateTime?
+  deliveryDate   DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // Relations
+  truck          Truck         @relation(fields: [truckId], references: [id])
+  contacts       FreightContact[]
+  notes          Note[]
+  extraCharges   ExtraCharge[]
+  payments       Payment[]
+  attachments    Attachment[]
+  
+  @@index([status])
+  @@index([createdAt])
+  @@index([truckId])
+}
+
+// Notes attached to freight
+model Note {
+  id          String   @id @default(cuid())
+  freightId   String
+  tag         String   // Driver Problem, Truck Problem, Payment Issue, etc.
+  description String
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  freight     Freight  @relation(fields: [freightId], references: [id], onDelete: Cascade)
+  
+  @@index([freightId])
+  @@index([tag])
+}
+
+// Notes attached to trucks (historical)
+model TruckNote {
+  id          String   @id @default(cuid())
+  truckId     String
+  tag         String
+  description String
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  truck       Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  
+  @@index([truckId])
+}
+
+// Extra charges on freight
+model ExtraCharge {
+  id          String   @id @default(cuid())
+  freightId   String
+  chargeType  String   // Detainment, Loading Labour, etc.
+  amount      Float
+  notes       String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  freight     Freight  @relation(fields: [freightId], references: [id], onDelete: Cascade)
+  
+  @@index([freightId])
+}
+
+// Payment tracking
+model Payment {
+  id           String    @id @default(cuid())
+  freightId    String
+  paymentType  String    // BROKER_FREIGHT, DRIVER_FREIGHT, EXTRA_CHARGE
+  amount       Float
+  direction    String    // INCOMING, OUTGOING
+  status       String    @default("PENDING") // PENDING, PARTIAL, COMPLETED
+  paymentDate  DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  
+  // Relations
+  freight      Freight   @relation(fields: [freightId], references: [id], onDelete: Cascade)
+  
+  @@index([freightId])
+  @@index([status])
+}
+
+// File attachments
+model Attachment {
+  id            String   @id @default(cuid())
+  freightId     String
+  fileName      String
+  filePath      String
+  fileType      String   // IMAGE, PDF, DOCUMENT
+  fileSize      Float
+  mimeType      String
+  thumbnailPath String?
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  freight       Freight  @relation(fields: [freightId], references: [id], onDelete: Cascade)
+  
+  @@index([freightId])
+}
+
+// Tags for notes, charges, contacts
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  category   String   // NOTE, CHARGE, CONTACT
+  colorCode  String   @default("#FF7A00")
+  isCustom   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  
+  @@index([category])
+}
+
+// Search index for quick lookup
+model SearchIndex {
+  id         String   @id @default(cuid())
+  entityType String   // FREIGHT, TRUCK, CONTACT, NOTE
+  entityId   String
+  searchText String
+  createdAt  DateTime @default(now())
+  
+  @@index([entityType])
+  @@index([searchText])
+}
+
+// App settings
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
